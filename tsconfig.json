@@ -24,6 +24,7 @@
     "paths": {
       "@hooks/*": ["src/hooks/*"],
       "@widgets/*": ["src/widgets/*"],
+      "@components/*": ["src/components/*"],
     }
   },
   "include": ["src"],
