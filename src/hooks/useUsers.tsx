@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import io from "socket.io-client";
 
-/**
- * ToDo - вынести в env
- */
-const socket = io("http://localhost:3001");
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+const socket = io(SOCKET_URL);
 
 interface User {
   id: string;
