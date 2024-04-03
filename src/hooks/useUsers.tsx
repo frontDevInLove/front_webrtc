@@ -1,13 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import io from "socket.io-client";
+import { User, useUserStore } from "@app/store";
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 const socket = io(SOCKET_URL);
-
-interface User {
-  id: string;
-  username: string;
-}
 
 // Определение enum для действий
 enum UserAction {
@@ -19,6 +15,7 @@ enum UserAction {
 
 const useUsers = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const setUser = useUserStore((state) => state.setUser);
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -37,8 +34,7 @@ const useUsers = () => {
 
   const addUser = useCallback((username: string) => {
     socket.emit(UserAction.AddUser, username, (newUser: User) => {
-      // ToDo - надо бы сохранить в стор
-      console.log(newUser);
+      setUser(newUser);
     });
   }, []);
 

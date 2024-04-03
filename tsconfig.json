@@ -25,6 +25,7 @@
       "@hooks/*": ["src/hooks/*"],
       "@widgets/*": ["src/widgets/*"],
       "@components/*": ["src/components/*"],
+      "@app/*": ["src/app/*"],
     }
   },
   "include": ["src"],
