@@ -3,8 +3,9 @@ import { VideoCameraOutlined } from "@ant-design/icons";
 import useUsers from "@hooks/useUsers";
 import { User, useUserStore } from "@app/store";
 import CallComponent from "@components/CallComponent";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useCall } from "@hooks/useCall.tsx";
+import { OutgoingCallDialog } from "@components/OutgoingCallDialog/OutgoingCallDialog.tsx";
 
 const { Sider } = Layout;
 const { Title } = Typography;
@@ -12,6 +13,9 @@ const { Title } = Typography;
  * Компонент для боковой панели приложения
  */
 const Sidebar = () => {
+  const [receiver, setReceiver] = useState<User | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   // Список пользователей в сети
   const { users } = useUsers();
 
@@ -25,9 +29,15 @@ const Sidebar = () => {
   const initiateCallHandler = useCallback(
     (user: User) => {
       initiateCall(user.id);
+      setReceiver(user);
+      setIsDialogOpen(true);
     },
-    [initiateCall],
+    [initiateCall, receiver],
   );
+
+  const handleRejectCall = useCallback(() => {
+    setIsDialogOpen(false); // Закрываем модальное окно при отклонении звонка
+  }, []);
 
   useEffect(() => {
     // Пропускаем первый сигнал, поскольку он является инициализацией
@@ -55,6 +65,14 @@ const Sidebar = () => {
       </Menu>
 
       <CallComponent call={incomingCall} />
+
+      {receiver && (
+        <OutgoingCallDialog
+          user={receiver}
+          isOpen={isDialogOpen}
+          onReject={handleRejectCall}
+        />
+      )}
     </Sider>
   );
 };

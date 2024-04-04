@@ -7,7 +7,7 @@ interface CallComponentProps {
 }
 
 // таймаута для автоматического сброса звонка
-const CALL_TIMEOUT = 30000;
+const CALL_TIMEOUT = 5000;
 
 const CallComponent: FC<CallComponentProps> = ({ call }) => {
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
