@@ -1,7 +1,10 @@
 import { Layout, Menu, Typography } from "antd";
 import { VideoCameraOutlined } from "@ant-design/icons";
 import useUsers from "@hooks/useUsers";
-import { useUserStore } from "@app/store";
+import { User, useUserStore } from "@app/store";
+import CallComponent from "@components/CallComponent";
+import { useCallback, useEffect } from "react";
+import { useCall } from "@hooks/useCall.tsx";
 
 const { Sider } = Layout;
 const { Title } = Typography;
@@ -9,10 +12,27 @@ const { Title } = Typography;
  * Компонент для боковой панели приложения
  */
 const Sidebar = () => {
+  // Список пользователей в сети
   const { users } = useUsers();
+
+  // Текущий пользователь
   const user = useUserStore((state) => state.user);
 
-  console.log(user);
+  // Инициировать звонок и отправить звонок на другого пользователя
+  const { initiateCall, incomingCall } = useCall();
+
+  // Инициировать звонок и отправить звонок на другого пользователя
+  const initiateCallHandler = useCallback(
+    (user: User) => {
+      initiateCall(user.id);
+    },
+    [initiateCall],
+  );
+
+  useEffect(() => {
+    // Пропускаем первый сигнал, поскольку он является инициализацией
+    if (!incomingCall) return;
+  }, [incomingCall]);
 
   return (
     <Sider breakpoint="lg" collapsedWidth="0" theme="light">
@@ -24,11 +44,17 @@ const Sidebar = () => {
           users
             .filter(({ id }) => id !== user.id)
             .map((user) => (
-              <Menu.Item key={user.id} icon={<VideoCameraOutlined />}>
+              <Menu.Item
+                key={user.id}
+                icon={<VideoCameraOutlined />}
+                onClick={() => initiateCallHandler(user)}
+              >
                 {user.username}
               </Menu.Item>
             ))}
       </Menu>
+
+      <CallComponent call={incomingCall} />
     </Sider>
   );
 };

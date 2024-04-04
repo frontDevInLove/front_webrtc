@@ -1,9 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import io from "socket.io-client";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { User, useUserStore } from "@app/store";
-
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
-const socket = io(SOCKET_URL);
+import { SocketContext } from "@app/context/SocketProvider";
 
 // Определение enum для действий
 enum UserAction {
@@ -16,31 +13,40 @@ enum UserAction {
 const useUsers = () => {
   const [users, setUsers] = useState<User[]>([]);
   const setUser = useUserStore((state) => state.setUser);
+  const socket = useContext(SocketContext);
 
   useEffect(() => {
-    socket.on("connect", () => {
-      socket.emit(UserAction.GetUsers);
-    });
+    if (socket) {
+      socket.on("connect", () => {
+        socket.emit(UserAction.GetUsers);
+      });
 
-    socket.on(UserAction.UsersList, (users) => {
-      setUsers(users);
-    });
+      socket.on(UserAction.UsersList, (users: User[]) => {
+        setUsers(users);
+      });
 
-    return () => {
-      socket.off("connect");
-      socket.off(UserAction.UsersList);
-    };
-  }, []);
+      return () => {
+        socket.off("connect");
+        socket.off(UserAction.UsersList);
+      };
+    }
+  }, [socket]); // Добавьте socket в список зависимостей
 
-  const addUser = useCallback((username: string) => {
-    socket.emit(UserAction.AddUser, username, (newUser: User) => {
-      setUser(newUser);
-    });
-  }, []);
+  const addUser = useCallback(
+    (username: string) => {
+      socket.emit(UserAction.AddUser, username, (newUser: User) => {
+        setUser(newUser);
+      });
+    },
+    [socket], // Добавьте socket в список зависимостей
+  );
 
-  const removeUser = useCallback((userId: string) => {
-    socket.emit(UserAction.RemoveUser, userId);
-  }, []);
+  const removeUser = useCallback(
+    (userId: string) => {
+      socket.emit(UserAction.RemoveUser, userId);
+    },
+    [socket], // Добавьте socket в список зависимостей
+  );
 
   return { users, addUser, removeUser };
 };

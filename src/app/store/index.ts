@@ -1,4 +1,4 @@
-import create from "zustand";
+import { create } from "zustand";
 
 // Определение интерфейса пользователя
 export interface User {
