@@ -7,21 +7,21 @@ import { FC, useCallback } from "react";
 const { Sider } = Layout;
 const { Title } = Typography;
 
-interface SidebarProps {
-  onInitiateCall: (receiver: User) => void; // Пропс для инициации звонка
-}
+interface SidebarProps {}
 
-export const Sidebar: FC<SidebarProps> = ({ onInitiateCall }) => {
+export const Sidebar: FC<SidebarProps> = () => {
   // Получаем список пользователей и текущего пользователя
   const { users } = useUsers();
-  const currentUser = useUserStore((state) => state.user);
+  const { user: currentUser, setReceiver } = useUserStore(
+    ({ user, setReceiver }) => ({ user, setReceiver }),
+  );
 
   // Функция обработки клика на элемент меню (пользователя), чтобы начать звонок
   const handleUserClick = useCallback(
     (receiver: User) => {
-      onInitiateCall(receiver);
+      setReceiver(receiver);
     },
-    [onInitiateCall],
+    [setReceiver],
   );
 
   return (

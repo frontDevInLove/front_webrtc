@@ -1,0 +1,43 @@
+.call-component {
+  &__income{
+    text-align: center;
+    font-weight: 600;
+  }
+
+  &__text {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 24px;
+  }
+
+  &__buttons {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+  }
+
+  &__button {
+    font-size: 24px;
+    border-color: transparent;
+    color: white !important;
+
+    &--accept {
+      background-color: #52c41a;
+
+      &:hover {
+        background-color: #73d13d !important;
+        border-color: #73d13d !important;
+      }
+    }
+
+    &--reject {
+      background-color: #ff4d4f;
+
+      &:hover {
+        background-color: #ff7875 !important;
+        border-color: #ff7875 !important;
+      }
+    }
+  }
+}

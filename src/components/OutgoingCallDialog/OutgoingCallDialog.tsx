@@ -1,23 +1,44 @@
-import { FC } from "react";
+import { FC, useEffect, useState } from "react";
 import { Modal, Button } from "antd";
-import { User } from "@app/store";
+import { useUserStore } from "@app/store";
 import { PhoneOutlined } from "@ant-design/icons";
 import styles from "./OutgoingCallDialog.module.scss";
+import { Call, useCall } from "@hooks/useCall.tsx";
 
-interface OutgoingCallDialogProps {
-  receiver: User;
-  isOpen: boolean;
-  onReject: () => void; // Функция, вызываемая при отклонении звонка
-}
+interface OutgoingCallDialogProps {}
 
-export const OutgoingCallDialog: FC<OutgoingCallDialogProps> = ({
-  receiver,
-  isOpen,
-  onReject,
-}) => {
-  // Функция для обработки нажатия на кнопку "Сбросить"
+/**
+ * Компонент отображает модальное окно для исходящего звонка.
+ */
+export const OutgoingCallDialog: FC<OutgoingCallDialogProps> = () => {
+  const { receiver, user, setReceiver } = useUserStore(
+    ({ receiver, setReceiver, user }) => ({ receiver, setReceiver, user }),
+  );
+
+  // Состояние видимости модального окна
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+
+  const { rejectCall, initiateCall } = useCall();
+
+  // Показываем или скрываем модальное окно в зависимости от наличия получателя звонка
+  useEffect(() => {
+    if (!receiver) return setIsOpen(false);
+
+    initiateCall(receiver.id);
+    setIsOpen(true);
+  }, [receiver]);
+
+  // Обработчик нажатия на кнопку "Сбросить" - отклонение исходящего звонка
   const handleReject = () => {
-    onReject(); // Вызов переданной функции для обработки события отклонения звонка
+    if (!user || !receiver) return;
+
+    const call: Call = {
+      receiver: receiver,
+      caller: user,
+    };
+
+    rejectCall(call); // Отправка сигнала об отклонении звонка
+    setReceiver(null); // Сброс выбранного получателя в сторе
   };
 
   return (
@@ -29,7 +50,7 @@ export const OutgoingCallDialog: FC<OutgoingCallDialogProps> = ({
     >
       <div className={styles.dialogContent}>
         <p className={styles.username}>
-          Звонок пользователю: {receiver.username}
+          Звонок пользователю: {receiver?.username}
         </p>
         <Button
           type="primary"

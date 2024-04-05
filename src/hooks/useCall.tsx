@@ -6,7 +6,9 @@ enum CallActions {
   InitiateCall = "initiateCall",
   IncomingCall = "incomingCall",
   RejectCall = "rejectCall",
+  RejectCallIncoming = "rejectCallIncoming",
   CallRejected = "callRejected",
+  CallRejectedIncoming = "callRejectedIncoming",
 }
 
 export interface Call {
@@ -21,7 +23,10 @@ export interface Call {
 
 export const useCall = () => {
   const socket = useContext(SocketContext);
-  const user = useUserStore((state) => state.user); // Текущий пользователь
+  const { user, setReceiver } = useUserStore(({ user, setReceiver }) => ({
+    user,
+    setReceiver,
+  })); // Текущий пользователь
   const [incomingCall, setIncomingCall] = useState<Call | null>(null);
 
   // Инициировать звонок
@@ -49,6 +54,14 @@ export const useCall = () => {
     (call: Call) => {
       if (!socket) return;
       socket.emit(CallActions.RejectCall, call);
+    },
+    [socket],
+  );
+
+  const rejectCallIncoming = useCallback(
+    (call: Call) => {
+      if (!socket) return;
+      socket.emit(CallActions.RejectCallIncoming, call);
     },
     [socket],
   );
@@ -82,5 +95,19 @@ export const useCall = () => {
     };
   }, [socket]);
 
-  return { initiateCall, incomingCall, rejectCall };
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleCallRejectedIncoming = () => {
+      setReceiver(null);
+    };
+
+    socket.on(CallActions.CallRejectedIncoming, handleCallRejectedIncoming);
+
+    return () => {
+      socket.off(CallActions.CallRejectedIncoming, handleCallRejectedIncoming);
+    };
+  }, [socket]);
+
+  return { initiateCall, incomingCall, rejectCall, rejectCallIncoming };
 };
