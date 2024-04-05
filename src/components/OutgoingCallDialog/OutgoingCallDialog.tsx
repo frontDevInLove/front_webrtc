@@ -18,13 +18,13 @@ export const OutgoingCallDialog: FC<OutgoingCallDialogProps> = () => {
   // Состояние видимости модального окна
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
-  const { rejectCall, initiateCall } = useCall();
+  const { rejectCallOutgoing, initiateCall } = useCall();
 
   // Показываем или скрываем модальное окно в зависимости от наличия получателя звонка
   useEffect(() => {
     if (!receiver) return setIsOpen(false);
 
-    initiateCall(receiver.id);
+    initiateCall(receiver);
     setIsOpen(true);
   }, [receiver]);
 
@@ -37,7 +37,7 @@ export const OutgoingCallDialog: FC<OutgoingCallDialogProps> = () => {
       caller: user,
     };
 
-    rejectCall(call); // Отправка сигнала об отклонении звонка
+    rejectCallOutgoing(call); // Отправка сигнала об отклонении звонка
     setReceiver(null); // Сброс выбранного получателя в сторе
   };
 

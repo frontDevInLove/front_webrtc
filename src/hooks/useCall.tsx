@@ -2,112 +2,134 @@ import { useContext, useCallback, useEffect, useState } from "react";
 import { SocketContext } from "@app/context/SocketProvider";
 import { User, useUserStore } from "@app/store";
 
-enum CallActions {
+// Интерфейс описывает структуру звонка.
+export interface Call {
+  caller: User; // Инициатор звонка.
+  receiver: User; // Получатель звонка.
+}
+
+// Перечисление действий, инициируемых клиентом.
+enum ClientCallActions {
   InitiateCall = "initiateCall",
-  IncomingCall = "incomingCall",
-  RejectCall = "rejectCall",
+  RejectCallOutgoing = "rejectCallOutgoing",
   RejectCallIncoming = "rejectCallIncoming",
-  CallRejected = "callRejected",
+}
+
+// Перечисление действий, инициируемых сервером.
+enum ServerCallActions {
+  IncomingCall = "incomingCall",
+  CallRejectedOutgoing = "callRejectedOutgoing",
   CallRejectedIncoming = "callRejectedIncoming",
 }
 
-export interface Call {
-  // Объект пользователя, инициирующего звонок.
-  // Содержит информацию о пользователе, который совершает вызов.
-  caller: User;
-
-  // Объект пользователя, которому предназначен звонок.
-  // Содержит информацию о пользователе, который должен принять или отклонить звонок.
-  receiver: User;
-}
-
+// Хук useCall предоставляет методы и состояние для управления звонками.
 export const useCall = () => {
   const socket = useContext(SocketContext);
-  const { user, setReceiver } = useUserStore(({ user, setReceiver }) => ({
-    user,
-    setReceiver,
-  })); // Текущий пользователь
+
+  const { user, setReceiver, receiver } = useUserStore(
+    ({ user, setReceiver, receiver }) => ({
+      user,
+      setReceiver,
+      receiver,
+    }),
+  );
+
+  // Текущий входящий звонок
   const [incomingCall, setIncomingCall] = useState<Call | null>(null);
 
-  // Инициировать звонок
+  // Инициирует звонок другому пользователю.
   const initiateCall = useCallback(
-    (receiverId: string) => {
+    (receiver: User) => {
       if (!socket || !user) return;
-      const callerId = user.id;
+      console.log(`${user.username} звонит ${receiver.username}`);
 
-      socket.emit(CallActions.InitiateCall, callerId, receiverId);
+      const newCall: Call = {
+        caller: user,
+        receiver,
+      };
+
+      socket.emit(ClientCallActions.InitiateCall, newCall);
     },
     [socket, user],
   );
 
-  // // Принять звонок
-  // const acceptCall = useCallback(
-  //   (callId: string) => {
-  //     if (!socket) return;
-  //     socket.emit(CallActions.AcceptCall, callId);
-  //   },
-  //   [socket],
-  // );
-
-  // Отклонить звонок
-  const rejectCall = useCallback(
+  // Отклоняет исходящий звонок.
+  const rejectCallOutgoing = useCallback(
     (call: Call) => {
       if (!socket) return;
-      socket.emit(CallActions.RejectCall, call);
+      console.log(
+        `${call.caller.username} отклонил свой звонок ${call.receiver.username}`,
+      );
+      socket.emit(ClientCallActions.RejectCallOutgoing, call);
     },
     [socket],
   );
 
+  // Отклоняет входящий звонок.
   const rejectCallIncoming = useCallback(
     (call: Call) => {
       if (!socket) return;
-      socket.emit(CallActions.RejectCallIncoming, call);
+      console.log(
+        `${call.receiver.username} не принял входящий звонок от ${call.caller.username}`,
+      );
+      socket.emit(ClientCallActions.RejectCallIncoming, call);
     },
     [socket],
   );
 
-  // Слушать входящие звонки и другие события звонка
+  // Слушатели для обработки событий звонков от сервера
   useEffect(() => {
     if (!socket) return;
 
+    // Обработка входящего звонка.
     const handleIncomingCall = (call: Call) => {
-      setIncomingCall(call);
+      console.log(` ${call.caller.username} звонит ${call.receiver.username}`);
+      setIncomingCall(call); // Установка состояния входящего звонка.
     };
 
-    socket.on(CallActions.IncomingCall, handleIncomingCall);
+    // Обработка событий отклонения звонка.
+    const handleCallRejected = (action: ServerCallActions) => () => {
+      if (action === ServerCallActions.CallRejectedOutgoing) {
+        console.log(`Исходящий звонок отклонент`, incomingCall);
+        setIncomingCall(null);
+      } else if (action === ServerCallActions.CallRejectedIncoming) {
+        console.log(`Входящий звонок отклонент`, receiver);
+        setReceiver(null);
+      }
+    };
 
+    socket.on(ServerCallActions.IncomingCall, handleIncomingCall);
+    socket.on(
+      ServerCallActions.CallRejectedOutgoing,
+      handleCallRejected(ServerCallActions.CallRejectedOutgoing),
+    );
+    socket.on(
+      ServerCallActions.CallRejectedIncoming,
+      handleCallRejected(ServerCallActions.CallRejectedIncoming),
+    );
+
+    // Очищаем подписки на события при размонтировании компонента.
     return () => {
-      socket.off(CallActions.IncomingCall, handleIncomingCall);
+      socket.off(ServerCallActions.IncomingCall, handleIncomingCall);
+      socket.off(
+        ServerCallActions.CallRejectedOutgoing,
+        handleCallRejected(ServerCallActions.CallRejectedOutgoing),
+      );
+      socket.off(
+        ServerCallActions.CallRejectedIncoming,
+        handleCallRejected(ServerCallActions.CallRejectedIncoming),
+      );
     };
-  }, [socket]);
+  }, [socket, setReceiver, incomingCall, receiver]);
 
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleCallRejected = () => {
-      setIncomingCall(null);
-    };
-
-    socket.on(CallActions.CallRejected, handleCallRejected);
-
-    return () => {
-      socket.off(CallActions.CallRejected, handleCallRejected);
-    };
-  }, [socket]);
-
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleCallRejectedIncoming = () => {
-      setReceiver(null);
-    };
-
-    socket.on(CallActions.CallRejectedIncoming, handleCallRejectedIncoming);
-
-    return () => {
-      socket.off(CallActions.CallRejectedIncoming, handleCallRejectedIncoming);
-    };
-  }, [socket]);
-
-  return { initiateCall, incomingCall, rejectCall, rejectCallIncoming };
+  return { initiateCall, incomingCall, rejectCallOutgoing, rejectCallIncoming };
 };
+
+// // Принять звонок
+// const acceptCall = useCallback(
+//   (callId: string) => {
+//     if (!socket) return;
+//     socket.emit(CallActions.AcceptCall, callId);
+//   },
+//   [socket],
+// );

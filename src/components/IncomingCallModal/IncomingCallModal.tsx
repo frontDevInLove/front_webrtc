@@ -29,11 +29,11 @@ export const IncomingCallModal: FC<CallComponentProps> = () => {
     return audio;
   }, []);
 
-  // Функция для начала воспроизведения звонка ToDo - расскоментировать
+  // Функция для начала воспроизведения звонка
   const startRinging = useCallback(() => {
-    // audio
-    //   .play()
-    //   .catch((error) => console.error("Ошибка воспроизведения аудио:", error));
+    audio
+      .play()
+      .catch((error) => console.error("Ошибка воспроизведения аудио:", error));
   }, [audio]);
 
   // Функция для остановки воспроизведения звонка
