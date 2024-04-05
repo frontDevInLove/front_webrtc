@@ -1,25 +1,22 @@
 import { useState, useEffect, useCallback, FC, useMemo } from "react";
 import { Modal, Button } from "antd";
-import { useCall } from "@hooks/useCall.tsx";
+import { useCall } from "@hooks/useCall";
 import { PhoneOutlined } from "@ant-design/icons";
 import styles from "./IncomingCallModal.module.scss";
 
 interface CallComponentProps {}
 
-// Задаём таймаут для автоматического сброса входящего звонка
+// Устанавливаем таймаут для автоматического сброса звонка в миллисекундах
 const CALL_TIMEOUT = 30000;
 
 /**
  * Компонент отображает модальное окно для входящего звонка.
- * @constructor
  */
 export const IncomingCallModal: FC<CallComponentProps> = () => {
   const { incomingCall, rejectCallIncoming } = useCall();
 
   // Состояние видимости модального окна
   const [isOpen, setIsOpen] = useState<boolean>(false);
-
-  const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
 
   // Инициализируем аудио объект для воспроизведения звонка
   const audio = useMemo(() => {
@@ -44,49 +41,35 @@ export const IncomingCallModal: FC<CallComponentProps> = () => {
 
   // Функция обработки отклонения звонка
   const handleReject = useCallback(() => {
-    if (!incomingCall) return;
-
     setIsOpen(false);
     stopRinging();
-    if (timer) clearTimeout(timer);
+
     console.log("Звонок отклонен");
 
-    rejectCallIncoming(incomingCall);
-  }, [timer, stopRinging]);
+    incomingCall && rejectCallIncoming(incomingCall);
+  }, [incomingCall, rejectCallIncoming, stopRinging]);
 
-  // Автоматический сброс звонка после заданного таймаута
-  const handleOpen = useCallback(() => {
-    setIsOpen(true);
-    startRinging();
-
-    const timeout = setTimeout(() => {
-      console.log("Звонок пропущен");
-      handleReject();
-    }, CALL_TIMEOUT);
-
-    setTimer(timeout);
-  }, [handleReject, startRinging]);
-
-  // Функция обработки принятия звонка ToDo - надо дописать
+  // Принятие звонка (пока не реализовано)
   const handleAccept = useCallback(() => {
-    console.log("Взяли трубку");
-    handleReject();
+    console.log("Звонок принят.");
+    handleReject(); // Пока что просто закрываем модальное окно
   }, [handleReject]);
 
   useEffect(() => {
-    // Очистка таймера при размонтировании компонента
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [timer]);
-
-  useEffect(() => {
     if (incomingCall) {
-      handleOpen();
+      setIsOpen(true);
+      startRinging();
+
+      const timeout = setTimeout(() => {
+        console.log("Звонок автоматически пропущен после таймаута.");
+        handleReject();
+      }, CALL_TIMEOUT);
+
+      return () => clearTimeout(timeout);
     } else {
       handleReject();
     }
-  }, [incomingCall]);
+  }, [handleReject, startRinging, incomingCall]);
 
   return (
     <Modal
