@@ -5,10 +5,17 @@ import { User, useUserStore } from "@app/store";
 enum CallActions {
   InitiateCall = "initiateCall",
   IncomingCall = "incomingCall",
+  RejectCall = "rejectCall",
+  CallRejected = "callRejected",
 }
 
 export interface Call {
+  // Объект пользователя, инициирующего звонок.
+  // Содержит информацию о пользователе, который совершает вызов.
   caller: User;
+
+  // Объект пользователя, которому предназначен звонок.
+  // Содержит информацию о пользователе, который должен принять или отклонить звонок.
   receiver: User;
 }
 
@@ -36,15 +43,15 @@ export const useCall = () => {
   //   },
   //   [socket],
   // );
-  //
-  // // Отклонить звонок
-  // const rejectCall = useCallback(
-  //   (callId: string) => {
-  //     if (!socket) return;
-  //     socket.emit(CallActions.RejectCall, callId);
-  //   },
-  //   [socket],
-  // );
+
+  // Отклонить звонок
+  const rejectCall = useCallback(
+    (call: Call) => {
+      if (!socket) return;
+      socket.emit(CallActions.RejectCall, call);
+    },
+    [socket],
+  );
 
   // Слушать входящие звонки и другие события звонка
   useEffect(() => {
@@ -61,5 +68,19 @@ export const useCall = () => {
     };
   }, [socket]);
 
-  return { initiateCall, incomingCall };
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleCallRejected = () => {
+      setIncomingCall(null);
+    };
+
+    socket.on(CallActions.CallRejected, handleCallRejected);
+
+    return () => {
+      socket.off(CallActions.CallRejected, handleCallRejected);
+    };
+  }, [socket]);
+
+  return { initiateCall, incomingCall, rejectCall };
 };

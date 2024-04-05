@@ -5,13 +5,13 @@ import { PhoneOutlined } from "@ant-design/icons";
 import styles from "./OutgoingCallDialog.module.scss";
 
 interface OutgoingCallDialogProps {
-  user: User;
+  receiver: User;
   isOpen: boolean;
   onReject: () => void; // Функция, вызываемая при отклонении звонка
 }
 
 export const OutgoingCallDialog: FC<OutgoingCallDialogProps> = ({
-  user,
+  receiver,
   isOpen,
   onReject,
 }) => {
@@ -28,7 +28,9 @@ export const OutgoingCallDialog: FC<OutgoingCallDialogProps> = ({
       className={styles.dialog}
     >
       <div className={styles.dialogContent}>
-        <p className={styles.username}>Звонок пользователю: {user.username}</p>
+        <p className={styles.username}>
+          Звонок пользователю: {receiver.username}
+        </p>
         <Button
           type="primary"
           shape="circle"
